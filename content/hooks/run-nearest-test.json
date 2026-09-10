@@ -1,0 +1,55 @@
+{
+  "slug": "run-nearest-test",
+  "name": "Run the nearest test after an edit",
+  "oneLine": "Finds the test file that belongs to the file Claude just edited and runs it, in the background.",
+  "description": "Maps the edited file to its test twin using common conventions (foo.ts -> foo.test.ts, foo.py -> test_foo.py), runs that test with the right runner (vitest/jest via npx, or pytest), and reports failures back to Claude. Runs async so editing never waits on a test suite. Path mapping is heuristic - extend the case list for your layout.",
+  "category": [
+    "testing"
+  ],
+  "tags": [
+    "async"
+  ],
+  "event": "PostToolUse",
+  "matcher": "Edit|Write",
+  "handlerType": "command",
+  "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/run-nearest-test.sh",
+  "scriptPath": ".claude/hooks/run-nearest-test.sh",
+  "scriptBody": "#!/bin/bash\n# run-nearest-test: run the test file paired with the edited file (async).\nset -u\nfile=$(jq -r '.tool_input.file_path // empty')\n[ -z \"$file\" ] && exit 0\ndir=$(dirname \"$file\"); base=$(basename \"$file\"); stem=\"${base%.*}\"\ncandidates=\"\"\ncase \"$base\" in\n  *.test.*|*.spec.*|test_*.py) exit 0 ;;  # edited file IS a test; skip\n  *.ts|*.tsx|*.js|*.jsx) candidates=\"$dir/$stem.test.ts $dir/$stem.test.tsx $dir/$stem.test.js $dir/$stem.spec.ts\" ;;\n  *.py) candidates=\"$dir/test_$stem.py $dir/${stem}_test.py\" ;;\n  *) exit 0 ;;\nesac\ntest_file=\"\"\nfor c in $candidates; do [ -f \"$c\" ] && test_file=\"$c\" && break; done\n[ -z \"$test_file\" ] && exit 0\ncd \"${CLAUDE_PROJECT_DIR:-$PWD}\" || exit 0\ncase \"$test_file\" in\n  *.py)\n    command -v pytest >/dev/null 2>&1 || exit 0\n    if ! pytest -q \"$test_file\" >/dev/null 2>&1; then\n      echo \"Tests failed in $test_file after editing $file\" >&2\n      pytest -q \"$test_file\" 2>&1 | tail -20 >&2\n      exit 2\n    fi\n    ;;\n  *)\n    if ! npx vitest run \"$test_file\" >/dev/null 2>&1 && ! npx jest \"$test_file\" >/dev/null 2>&1; then\n      echo \"Tests failed in $test_file after editing $file\" >&2\n      exit 2\n    fi\n    ;;\nesac\nexit 0\n",
+  "timeout": 120,
+  "scope": "project",
+  "platforms": [
+    "macos",
+    "linux"
+  ],
+  "requires": [
+    "jq"
+  ],
+  "risk": "review",
+  "failureMode": "warn",
+  "installSteps": [
+    "Save the script to .claude/hooks/run-nearest-test.sh and chmod +x it.",
+    "Add the config fragment to .claude/settings.json. async: true is intentional - the hook runs in the background and reports on exit."
+  ],
+  "testSteps": [
+    "Positive: break an assertion in a paired test, have Claude edit the source file - Claude should get the failure report.",
+    "Negative: edit a file with no test twin - nothing runs.",
+    "Negative: edit the test file itself - the hook skips it to avoid loops."
+  ],
+  "sources": [
+    {
+      "title": "Claude Code hooks reference",
+      "url": "https://code.claude.com/docs/en/hooks",
+      "type": "official-docs",
+      "checkedAt": "2026-09-10"
+    }
+  ],
+  "verifiedAgainst": "Claude Code hooks reference, event/matcher schema checked 2026-09-10",
+  "testStatus": "needs-manual-check",
+  "seoTitle": "Run the nearest test after an edit - Claude Code hook",
+  "seoDescription": "An async PostToolUse hook that runs the test file paired with each edited file.",
+  "relatedHooks": [
+    "typecheck-after-ts",
+    "full-check-before-complete"
+  ],
+  "async": true
+}

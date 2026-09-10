@@ -1,0 +1,62 @@
+{
+  "slug": "block-destructive-commands",
+  "name": "Block destructive shell commands",
+  "oneLine": "Blocks rm -rf, disk tools, force pushes, and destructive git commands before they run.",
+  "description": "Fires before Bash tool calls. The script scans the command for a deliberately narrow list of destructive patterns (rm -rf, mkfs, dd to devices, fork bombs, git reset --hard, git clean -f, force push) and denies the call with a reason. Narrow on purpose: a broad blocker cries wolf and gets disabled.",
+  "category": [
+    "safety"
+  ],
+  "tags": [
+    "bash",
+    "git"
+  ],
+  "event": "PreToolUse",
+  "matcher": "Bash",
+  "handlerType": "command",
+  "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/block-destructive-commands.sh",
+  "scriptPath": ".claude/hooks/block-destructive-commands.sh",
+  "scriptBody": "#!/bin/bash\n# block-destructive-commands: deny a narrow list of destructive commands.\nset -u\ncmd=$(jq -r '.tool_input.command // empty')\n[ -z \"$cmd\" ] && exit 0\nblock_reason=\"\"\ncase \"$cmd\" in\n  *\"rm -rf\"*|*\"rm -fr\"*) block_reason=\"recursive force delete\" ;;\n  *\"mkfs\"*|*\"dd if=\"*\"/dev/\"*) block_reason=\"disk-level operation\" ;;\n  *\":(){\"*) block_reason=\"fork bomb\" ;;\n  *\"git reset --hard\"*) block_reason=\"git reset --hard discards uncommitted work\" ;;\n  *\"git clean -f\"*) block_reason=\"git clean deletes untracked files\" ;;\n  *\"push --force\"*|*\"push -f \"*) block_reason=\"force push rewrites remote history\" ;;\nesac\nif [ -n \"$block_reason\" ]; then\n  jq -n --arg r \"$block_reason\" --arg c \"$cmd\" '{\n    hookSpecificOutput: {\n      hookEventName: \"PreToolUse\",\n      permissionDecision: \"deny\",\n      permissionDecisionReason: (\"Blocked by hook: \" + $r + \". Command: \" + $c)\n    }\n  }'\n  exit 0\nfi\nexit 0\n",
+  "timeout": 10,
+  "scope": "either",
+  "platforms": [
+    "macos",
+    "linux"
+  ],
+  "requires": [
+    "jq"
+  ],
+  "risk": "blocking",
+  "failureMode": "block",
+  "recoveryNote": "The deny reason names the pattern that matched, so you can run the command yourself in a terminal if it was intentional. Adjust the case list to your taste - it is meant to be edited.",
+  "installSteps": [
+    "Save the script to .claude/hooks/block-destructive-commands.sh and chmod +x it.",
+    "Add the config fragment to settings.json."
+  ],
+  "testSteps": [
+    "Positive: ask Claude to 'run rm -rf /tmp/junk' - the call must be denied with the reason shown.",
+    "Negative: ask Claude to 'run rm -rf node_modules'... also blocked (the pattern is literal). If you want that allowed, whitelist it in the script.",
+    "Negative: 'ls -la' and 'git status' pass through normally."
+  ],
+  "sources": [
+    {
+      "title": "Claude Code hooks reference",
+      "url": "https://code.claude.com/docs/en/hooks",
+      "type": "official-docs",
+      "checkedAt": "2026-09-10"
+    },
+    {
+      "title": "Claude Code hooks guide",
+      "url": "https://code.claude.com/docs/en/hooks-guide",
+      "type": "official-docs",
+      "checkedAt": "2026-09-10"
+    }
+  ],
+  "verifiedAgainst": "Claude Code hooks reference, event/matcher schema checked 2026-09-10",
+  "testStatus": "needs-manual-check",
+  "seoTitle": "Block destructive shell commands - Claude Code hook",
+  "seoDescription": "A PreToolUse hook that denies rm -rf, disk tools, force pushes, and destructive git commands.",
+  "relatedHooks": [
+    "protect-env-secrets",
+    "block-writes-outside-repo"
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "slug": "eslint-after-edit",
+  "name": "ESLint after JS/TS edit",
+  "oneLine": "Runs eslint --fix on JavaScript and TypeScript files after Claude edits them, and warns (never blocks) on remaining problems.",
+  "description": "Same shape as the Prettier hook, but runs eslint --fix on .js/.jsx/.ts/.tsx files. If problems remain after fixing, the script exits 2 so Claude sees the lint output as a warning and can react - the edit itself already happened, so nothing is blocked.",
+  "category": [
+    "formatting"
+  ],
+  "tags": [],
+  "event": "PostToolUse",
+  "matcher": "Edit|Write",
+  "handlerType": "command",
+  "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/eslint-after-edit.sh",
+  "scriptPath": ".claude/hooks/eslint-after-edit.sh",
+  "scriptBody": "#!/bin/bash\n# eslint-after-edit: run after Claude edits a file. Reads hook JSON from stdin.\nset -u\nfile=$(jq -r '.tool_input.file_path // empty')\n[ -z \"$file\" ] && exit 0\n[ -f \"$file\" ] || exit 0\ncase \"$file\" in\n*.js|*.jsx|*.ts|*.tsx) ;;\n  *) exit 0 ;;\nesac\nif ! command -v eslint >/dev/null 2>&1; then\n  exit 0  # formatter not installed; stay silent\nfi\nif ! npx eslint --fix \"$file\" >/dev/null 2>&1; then\n  echo \"ESLint still reports problems in $file\" >&2\n  npx eslint \"$file\" >&2 2>/dev/null\n  exit 2\nfi\nexit 0\n",
+  "timeout": 30,
+  "scope": "project",
+  "platforms": [
+    "macos",
+    "linux"
+  ],
+  "requires": [
+    "jq",
+    "eslint"
+  ],
+  "risk": "review",
+  "failureMode": "warn",
+  "installSteps": [
+    "Save the script to .claude/hooks/eslint-after-edit.sh and run: chmod +x .claude/hooks/eslint-after-edit.sh",
+    "Install the formatter (eslint) and make sure it is on your PATH, plus jq.",
+    "Add the config fragment to .claude/settings.json (or use the generator)."
+  ],
+  "testSteps": [
+    "Positive: have Claude write a JS file with an auto-fixable lint issue (e.g. extra semicolon per your config) and confirm it gets fixed.",
+    "Warn path: have Claude write a file with a non-fixable issue and confirm Claude sees the warning (exit 2 shows stderr to Claude after the edit).",
+    "Negative: edit a .py file - ESLint should not run."
+  ],
+  "sources": [
+    {
+      "title": "Claude Code hooks reference",
+      "url": "https://code.claude.com/docs/en/hooks",
+      "type": "official-docs",
+      "checkedAt": "2026-09-10"
+    },
+    {
+      "title": "Claude Code hooks guide",
+      "url": "https://code.claude.com/docs/en/hooks-guide",
+      "type": "official-docs",
+      "checkedAt": "2026-09-10"
+    }
+  ],
+  "verifiedAgainst": "Claude Code hooks reference, event/matcher schema checked 2026-09-10",
+  "testStatus": "needs-manual-check",
+  "seoTitle": "ESLint after JS/TS edit - Claude Code hook",
+  "seoDescription": "Runs eslint --fix on JavaScript and TypeScript files after Claude edits them, and warns (never blocks) on remaining problems.",
+  "relatedHooks": [
+    "prettier-after-edit",
+    "typecheck-after-ts"
+  ]
+}

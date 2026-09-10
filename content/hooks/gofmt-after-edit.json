@@ -1,0 +1,56 @@
+{
+  "slug": "gofmt-after-edit",
+  "name": "gofmt after Go edit",
+  "oneLine": "Runs gofmt -w on Go files after Claude edits them.",
+  "description": "Gates on .go files and runs gofmt -w. gofmt ships with the Go toolchain, so there is nothing extra to install beyond Go itself.",
+  "category": [
+    "formatting"
+  ],
+  "tags": [],
+  "event": "PostToolUse",
+  "matcher": "Edit|Write",
+  "handlerType": "command",
+  "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/gofmt-after-edit.sh",
+  "scriptPath": ".claude/hooks/gofmt-after-edit.sh",
+  "scriptBody": "#!/bin/bash\n# gofmt-after-edit: run after Claude edits a file. Reads hook JSON from stdin.\nset -u\nfile=$(jq -r '.tool_input.file_path // empty')\n[ -z \"$file\" ] && exit 0\n[ -f \"$file\" ] || exit 0\ncase \"$file\" in\n*.go) ;;\n  *) exit 0 ;;\nesac\nif ! command -v gofmt >/dev/null 2>&1; then\n  exit 0  # formatter not installed; stay silent\nfi\ngofmt -w \"$file\" >/dev/null 2>&1\nexit 0\n",
+  "timeout": 30,
+  "scope": "project",
+  "platforms": [
+    "macos",
+    "linux"
+  ],
+  "requires": [
+    "jq",
+    "go"
+  ],
+  "risk": "low",
+  "failureMode": "observe",
+  "installSteps": [
+    "Save the script to .claude/hooks/gofmt-after-edit.sh and run: chmod +x .claude/hooks/gofmt-after-edit.sh",
+    "Install the formatter () and make sure it is on your PATH, plus jq.",
+    "Add the config fragment to .claude/settings.json (or use the generator)."
+  ],
+  "testSteps": [
+    "Positive: ask Claude to edit a matching file (*.go), then check the file was reformatted.",
+    "Negative: ask Claude to edit a non-matching file (e.g. README.txt) - the formatter should not run (check with /doctor or debug logs)."
+  ],
+  "sources": [
+    {
+      "title": "Claude Code hooks reference",
+      "url": "https://code.claude.com/docs/en/hooks",
+      "type": "official-docs",
+      "checkedAt": "2026-09-10"
+    },
+    {
+      "title": "Claude Code hooks guide",
+      "url": "https://code.claude.com/docs/en/hooks-guide",
+      "type": "official-docs",
+      "checkedAt": "2026-09-10"
+    }
+  ],
+  "verifiedAgainst": "Claude Code hooks reference, event/matcher schema checked 2026-09-10",
+  "testStatus": "needs-manual-check",
+  "seoTitle": "gofmt after Go edit - Claude Code hook",
+  "seoDescription": "Runs gofmt -w on Go files after Claude edits them.",
+  "relatedHooks": []
+}

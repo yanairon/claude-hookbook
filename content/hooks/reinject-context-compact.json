@@ -1,0 +1,58 @@
+{
+  "slug": "reinject-context-compact",
+  "name": "Re-inject project context after compaction",
+  "oneLine": "Restores your project's key facts into Claude's context right after a compaction wipes the details.",
+  "description": "Fires on SessionStart with the compact matcher - the moment after context compaction. The script prints your standing context (stack, commands, conventions - edit the heredoc) to stdout, and SessionStart stdout is added to Claude's context. Official-guide pattern. Keep the output short; it rides along for the rest of the session.",
+  "category": [
+    "context"
+  ],
+  "tags": [
+    "compaction"
+  ],
+  "event": "SessionStart",
+  "matcher": "compact",
+  "handlerType": "command",
+  "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/reinject-context-compact.sh",
+  "scriptPath": ".claude/hooks/reinject-context-compact.sh",
+  "scriptBody": "#!/bin/bash\n# reinject-context-compact: print standing context after compaction.\n# SessionStart stdout is added to Claude's context - keep this SHORT.\ncat <<'CTX'\nProject context (re-injected after compaction):\n- Stack: <your stack, e.g. Next.js 15 + Postgres>\n- Test command: <your test command>\n- Conventions: <3-5 bullets Claude keeps forgetting>\nCTX\nexit 0\n",
+  "timeout": 10,
+  "scope": "project",
+  "platforms": [
+    "macos",
+    "linux",
+    "windows"
+  ],
+  "requires": [],
+  "risk": "low",
+  "failureMode": "observe",
+  "installSteps": [
+    "Save the script to .claude/hooks/reinject-context-compact.sh and chmod +x it.",
+    "Edit the heredoc: 5-10 lines of the context Claude always needs.",
+    "Add the config fragment to .claude/settings.json."
+  ],
+  "testSteps": [
+    "Positive: run /compact, then ask Claude a question that depends on the injected facts - it should answer without re-reading files.",
+    "Negative: on a fresh session start (startup matcher), this hook must NOT fire - that is what the matcher is for."
+  ],
+  "sources": [
+    {
+      "title": "Claude Code hooks reference",
+      "url": "https://code.claude.com/docs/en/hooks",
+      "type": "official-docs",
+      "checkedAt": "2026-09-10"
+    },
+    {
+      "title": "Claude Code hooks guide",
+      "url": "https://code.claude.com/docs/en/hooks-guide",
+      "type": "official-docs",
+      "checkedAt": "2026-09-10"
+    }
+  ],
+  "verifiedAgainst": "Claude Code hooks reference, event/matcher schema checked 2026-09-10",
+  "testStatus": "needs-manual-check",
+  "seoTitle": "Re-inject project context after compaction - Claude Code hook",
+  "seoDescription": "A SessionStart/compact hook that restores key project facts after context compaction.",
+  "relatedHooks": [
+    "session-start-snapshot"
+  ]
+}

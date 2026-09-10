@@ -1,0 +1,52 @@
+{
+  "slug": "log-tool-failures",
+  "name": "Log tool failures for debugging",
+  "oneLine": "Writes a structured JSONL record whenever a Bash, Edit, or Write call fails - the debugging trail you wish you had last week.",
+  "description": "Fires on PostToolUseFailure. Appends {ts, session_id, tool_name, tool_use_id, error} to .claude/tool-failures.jsonl. Deliberately does NOT log full tool inputs: commands and file contents can contain secrets. When something breaks, tail this file instead of scrolling the transcript.",
+  "category": [
+    "workflow"
+  ],
+  "tags": [
+    "debugging"
+  ],
+  "event": "PostToolUseFailure",
+  "matcher": "Bash|Edit|Write",
+  "handlerType": "command",
+  "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/log-tool-failures.sh",
+  "scriptPath": ".claude/hooks/log-tool-failures.sh",
+  "scriptBody": "#!/bin/bash\n# log-tool-failures: structured failure log, inputs redacted by design.\nset -u\ninput=$(cat)\nlog=\"${CLAUDE_PROJECT_DIR:-.}/.claude/tool-failures.jsonl\"\nmkdir -p \"$(dirname \"$log\")\"\nprintf '%s' \"$input\" | jq -c   --arg ts \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"   '{ts: $ts, session: .session_id, tool: .tool_name, tool_use_id: .tool_use_id, error: (.error // .tool_use_error // \"unknown\")}'   >> \"$log\"\nexit 0\n",
+  "timeout": 10,
+  "scope": "project",
+  "platforms": [
+    "macos",
+    "linux"
+  ],
+  "requires": [
+    "jq"
+  ],
+  "risk": "low",
+  "failureMode": "observe",
+  "installSteps": [
+    "Save the script to .claude/hooks/log-tool-failures.sh and chmod +x it.",
+    "Add the config fragment to .claude/settings.json (and the log path to .gitignore)."
+  ],
+  "testSteps": [
+    "Positive: make a Bash call fail (e.g. run a command that does not exist via Claude), then tail .claude/tool-failures.jsonl.",
+    "Negative: successful tool calls write nothing."
+  ],
+  "sources": [
+    {
+      "title": "Claude Code hooks reference",
+      "url": "https://code.claude.com/docs/en/hooks",
+      "type": "official-docs",
+      "checkedAt": "2026-09-10"
+    }
+  ],
+  "verifiedAgainst": "Claude Code hooks reference, event/matcher schema checked 2026-09-10",
+  "testStatus": "needs-manual-check",
+  "seoTitle": "Log tool failures for debugging - Claude Code hook",
+  "seoDescription": "A PostToolUseFailure hook that writes a structured, redacted failure log.",
+  "relatedHooks": [
+    "compact-audit-trail"
+  ]
+}

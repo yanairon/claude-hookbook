@@ -1,0 +1,48 @@
+{
+  "slug": "bell-permission-prompt",
+  "name": "Terminal bell on permission prompt",
+  "oneLine": "Rings the terminal bell when Claude asks for permission. Zero dependencies.",
+  "description": "The simplest hook in the library: a one-line command that prints the BEL character on permission prompts. No script file, no jq, nothing to install. Your terminal emulator turns it into a sound or a badge bounce.",
+  "category": [
+    "notifications"
+  ],
+  "tags": [
+    "zero-dep"
+  ],
+  "event": "Notification",
+  "matcher": "permission_prompt",
+  "handlerType": "command",
+  "command": "printf '\\a'",
+  "timeout": 5,
+  "scope": "user",
+  "platforms": [
+    "macos",
+    "linux",
+    "windows"
+  ],
+  "requires": [],
+  "risk": "low",
+  "failureMode": "observe",
+  "installSteps": [
+    "Add the config fragment to ~/.claude/settings.json. That is the whole install."
+  ],
+  "testSteps": [
+    "Positive: trigger a permission prompt - the terminal bell rings (check your emulator's bell settings if silent).",
+    "Negative: regular output should not ring."
+  ],
+  "sources": [
+    {
+      "title": "Claude Code hooks reference",
+      "url": "https://code.claude.com/docs/en/hooks",
+      "type": "official-docs",
+      "checkedAt": "2026-09-10"
+    }
+  ],
+  "verifiedAgainst": "Claude Code hooks reference, event/matcher schema checked 2026-09-10",
+  "testStatus": "needs-manual-check",
+  "seoTitle": "Terminal bell on permission prompt - Claude Code hook",
+  "seoDescription": "Zero-dependency hook that rings the terminal bell on permission prompts.",
+  "relatedHooks": [
+    "notify-input-needed"
+  ]
+}

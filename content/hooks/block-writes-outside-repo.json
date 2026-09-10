@@ -1,0 +1,55 @@
+{
+  "slug": "block-writes-outside-repo",
+  "name": "Block writes outside the repo",
+  "oneLine": "Stops Edit/Write calls whose target path resolves outside the project root.",
+  "description": "Resolves the real path of the write target (following symlinks, handling files that do not exist yet via their parent directory) and compares it with the real project root. Anything outside is denied. Catches ../ escapes and absolute paths to your home directory or /etc.",
+  "category": [
+    "safety"
+  ],
+  "tags": [
+    "paths"
+  ],
+  "event": "PreToolUse",
+  "matcher": "Edit|Write",
+  "handlerType": "command",
+  "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/block-writes-outside-repo.sh",
+  "scriptPath": ".claude/hooks/block-writes-outside-repo.sh",
+  "scriptBody": "#!/bin/bash\n# block-writes-outside-repo: deny writes that land outside the project root.\nset -u\nfile=$(jq -r '.tool_input.file_path // empty')\n[ -z \"$file\" ] && exit 0\nroot=$(cd \"${CLAUDE_PROJECT_DIR:-$PWD}\" && pwd -P)\n# Resolve the target even if it does not exist yet: resolve the deepest\n# existing ancestor, then append the rest.\ntarget=\"$file\"\ncase \"$target\" in /*) ;; *) target=\"$root/$target\" ;; esac\ndir=$(dirname \"$target\")\nwhile [ ! -d \"$dir\" ] && [ \"$dir\" != \"/\" ]; do dir=$(dirname \"$dir\"); done\nresolved_dir=$(cd \"$dir\" 2>/dev/null && pwd -P || echo \"$dir\")\nresolved=\"$resolved_dir/$(basename \"$target\")\"\ncase \"$resolved\" in\n  \"$root\"|\"$root\"/*) exit 0 ;;\nesac\njq -n --arg f \"$resolved\" --arg r \"$root\" '{\n  hookSpecificOutput: {\n    hookEventName: \"PreToolUse\",\n    permissionDecision: \"deny\",\n    permissionDecisionReason: (\"Write outside project root blocked (\" + $f + \" is not under \" + $r + \").\")\n  }\n}'\nexit 0\n",
+  "timeout": 10,
+  "scope": "project",
+  "platforms": [
+    "macos",
+    "linux"
+  ],
+  "requires": [
+    "jq"
+  ],
+  "risk": "blocking",
+  "failureMode": "block",
+  "recoveryNote": "If Claude legitimately needs a file outside the repo (a shared config, a sibling package), either move the work into the repo or allowlist that path in the script.",
+  "installSteps": [
+    "Save the script to .claude/hooks/block-writes-outside-repo.sh and chmod +x it.",
+    "Add the config fragment to .claude/settings.json."
+  ],
+  "testSteps": [
+    "Positive: ask Claude to write to ~/notes.txt or ../outside.txt - both must be denied.",
+    "Negative: writes inside the repo, including in new subdirectories, pass through.",
+    "Symlink check: make a symlink inside the repo pointing outside it and have Claude write through it - it must be denied."
+  ],
+  "sources": [
+    {
+      "title": "Claude Code hooks reference",
+      "url": "https://code.claude.com/docs/en/hooks",
+      "type": "official-docs",
+      "checkedAt": "2026-09-10"
+    }
+  ],
+  "verifiedAgainst": "Claude Code hooks reference, event/matcher schema checked 2026-09-10",
+  "testStatus": "needs-manual-check",
+  "seoTitle": "Block writes outside the repo - Claude Code hook",
+  "seoDescription": "A PreToolUse hook that resolves real paths and denies writes outside the project root.",
+  "relatedHooks": [
+    "block-destructive-commands",
+    "protect-env-secrets"
+  ]
+}

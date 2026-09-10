@@ -1,0 +1,54 @@
+{
+  "slug": "notify-agent-complete",
+  "name": "Notify when the agent completes",
+  "oneLine": "Desktop notification when Claude finishes a turn - useful for long unattended runs.",
+  "description": "Fires on Notification with the agent_completed matcher and posts a native desktop notification. Pairs well with headless or background sessions you check on between other work.",
+  "category": [
+    "notifications"
+  ],
+  "tags": [
+    "desktop"
+  ],
+  "event": "Notification",
+  "matcher": "agent_completed",
+  "handlerType": "command",
+  "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/notify-agent-complete.sh",
+  "scriptPath": ".claude/hooks/notify-agent-complete.sh",
+  "scriptBody": "#!/bin/bash\n# notify-agent-complete: desktop notification on agent completion.\nset -u\nmsg=\"Claude finished\"\nif command -v osascript >/dev/null 2>&1; then\n  osascript -e \"display notification \\\"$msg\\\" with title \\\"Claude Code\\\"\" >/dev/null 2>&1 &\nelif command -v notify-send >/dev/null 2>&1; then\n  notify-send \"Claude Code\" \"$msg\" >/dev/null 2>&1 &\nfi\nexit 0\n",
+  "timeout": 10,
+  "scope": "user",
+  "platforms": [
+    "macos",
+    "linux"
+  ],
+  "requires": [
+    "jq"
+  ],
+  "risk": "low",
+  "failureMode": "observe",
+  "installSteps": [
+    "Save the script to .claude/hooks/notify-agent-complete.sh and chmod +x it.",
+    "Add the config fragment to ~/.claude/settings.json."
+  ],
+  "testSteps": [
+    "Positive: run a short task - a notification fires when the turn completes.",
+    "Negative: mid-turn tool calls should not notify."
+  ],
+  "sources": [
+    {
+      "title": "Claude Code hooks reference",
+      "url": "https://code.claude.com/docs/en/hooks",
+      "type": "official-docs",
+      "checkedAt": "2026-09-10"
+    }
+  ],
+  "verifiedAgainst": "Claude Code hooks reference, event/matcher schema checked 2026-09-10",
+  "testStatus": "needs-manual-check",
+  "seoTitle": "Notify when the agent completes - Claude Code hook",
+  "seoDescription": "Desktop notification when a Claude Code turn finishes.",
+  "relatedHooks": [
+    "notify-input-needed",
+    "bell-permission-prompt"
+  ],
+  "async": true
+}

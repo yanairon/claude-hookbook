@@ -1,0 +1,60 @@
+{
+  "slug": "full-check-before-complete",
+  "name": "Full check before task completion",
+  "oneLine": "Blocks Claude from marking a task completed while your project check fails.",
+  "description": "Fires on TaskCompleted. The script runs your project's check command (tests, lint, build - you pick) and exits 2 with the output when it fails; Claude gets the failure as a tool error and keeps working. Schema note: TaskCompleted decision behavior is one of the newer event semantics - verify against your Claude Code version before relying on it, which is why this hook ships as needs-manual-check.",
+  "category": [
+    "testing"
+  ],
+  "tags": [
+    "blocking"
+  ],
+  "event": "TaskCompleted",
+  "handlerType": "command",
+  "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/full-check-before-complete.sh",
+  "scriptPath": ".claude/hooks/full-check-before-complete.sh",
+  "scriptBody": "#!/bin/bash\n# full-check-before-complete: run the project check; block completion on failure.\n# Set HOOKBOOK_CHECK_CMD to your project check (default: npm test).\nset -u\ncd \"${CLAUDE_PROJECT_DIR:-$PWD}\" || exit 0\ncheck=\"${HOOKBOOK_CHECK_CMD:-npm test}\"\nif ! $check >/dev/null 2>&1; then\n  echo \"Project check failed ($check) - task is not done:\" >&2\n  $check 2>&1 | tail -30 >&2\n  exit 2\nfi\nexit 0\n",
+  "timeout": 600,
+  "scope": "project",
+  "platforms": [
+    "macos",
+    "linux"
+  ],
+  "requires": [],
+  "risk": "blocking",
+  "failureMode": "block",
+  "parameters": [
+    {
+      "key": "checkCommand",
+      "label": "Check command",
+      "description": "Command that must pass before a task can complete (set as HOOKBOOK_CHECK_CMD in the script).",
+      "default": "npm test"
+    }
+  ],
+  "recoveryNote": "The block only tells Claude the check failed, with output - it fixes and retries. To unblock yourself, fix the failure or remove the hook entry.",
+  "installSteps": [
+    "Save the script to .claude/hooks/full-check-before-complete.sh and chmod +x it.",
+    "Set HOOKBOOK_CHECK_CMD in the script to your real check (npm test, make check, pytest...).",
+    "Add the config fragment to .claude/settings.json, then run the manual test below before trusting it - TaskCompleted semantics are version-sensitive."
+  ],
+  "testSteps": [
+    "Positive: break the build, ask Claude to complete a task - completion must be blocked with the check output shown to Claude.",
+    "Negative: with the check green, task completion proceeds normally."
+  ],
+  "sources": [
+    {
+      "title": "Claude Code hooks reference",
+      "url": "https://code.claude.com/docs/en/hooks",
+      "type": "official-docs",
+      "checkedAt": "2026-09-10"
+    }
+  ],
+  "verifiedAgainst": "Claude Code hooks reference, event/matcher schema checked 2026-09-10",
+  "testStatus": "needs-manual-check",
+  "seoTitle": "Full check before task completion - Claude Code hook",
+  "seoDescription": "A TaskCompleted hook that blocks completion while the project check fails.",
+  "relatedHooks": [
+    "run-nearest-test",
+    "typecheck-after-ts"
+  ]
+}

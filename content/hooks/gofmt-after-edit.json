@@ -27,7 +27,7 @@
   "failureMode": "observe",
   "installSteps": [
     "Save the script to .claude/hooks/gofmt-after-edit.sh and run: chmod +x .claude/hooks/gofmt-after-edit.sh",
-    "Install the formatter () and make sure it is on your PATH, plus jq.",
+    "Install Go - gofmt ships with the toolchain, so there is no separate formatter install. jq is required too.",
     "Add the config fragment to .claude/settings.json (or use the generator)."
   ],
   "testSteps": [

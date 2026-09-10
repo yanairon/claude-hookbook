@@ -34,7 +34,7 @@
   "recoveryNote": "The block only tells Claude the check failed, with output - it fixes and retries. To unblock yourself, fix the failure or remove the hook entry.",
   "installSteps": [
     "Save the script to .claude/hooks/full-check-before-complete.sh and chmod +x it.",
-    "Set HOOKBOOK_CHECK_CMD in the script to your real check (npm test, make check, pytest...).",
+    "Edit the HOOKBOOK_CHECK_CMD default at the top of the script to your real check (npm test, make check, pytest...), or export HOOKBOOK_CHECK_CMD via the env key in settings.json.",
     "Add the config fragment to .claude/settings.json, then run the manual test below before trusting it - TaskCompleted semantics are version-sensitive."
   ],
   "testSteps": [

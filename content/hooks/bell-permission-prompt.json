@@ -1,8 +1,8 @@
 {
   "slug": "bell-permission-prompt",
   "name": "Terminal bell on permission prompt",
-  "oneLine": "Rings the terminal bell when Claude asks for permission. Zero dependencies.",
-  "description": "The simplest hook in the library: a one-line command that prints the BEL character on permission prompts. No script file, no jq, nothing to install. Your terminal emulator turns it into a sound or a badge bounce.",
+  "oneLine": "Rings the terminal bell when Claude asks for permission, via the terminalSequence output field.",
+  "description": "The simplest hook in the library: a one-line command that rings the terminal bell on permission prompts. No script file, no jq, nothing to install. Hooks run without a controlling terminal, so a plain printf of the BEL character never reaches your terminal - it lands in the debug log. Instead the hook prints a tiny JSON object with the terminalSequence field (bare BEL is on the allowlist), and Claude Code emits it through its own terminal write path. Interactive sessions only: in -p mode or the Agent SDK the field is ignored.",
   "category": [
     "notifications"
   ],
@@ -12,7 +12,7 @@
   "event": "Notification",
   "matcher": "permission_prompt",
   "handlerType": "command",
-  "command": "printf '\\a'",
+  "command": "printf '{\"terminalSequence\":\"\\u0007\"}'",
   "timeout": 5,
   "scope": "user",
   "platforms": [
@@ -27,8 +27,9 @@
     "Add the config fragment to ~/.claude/settings.json. That is the whole install."
   ],
   "testSteps": [
-    "Positive: trigger a permission prompt - the terminal bell rings (check your emulator's bell settings if silent).",
-    "Negative: regular output should not ring."
+    "Positive: trigger a permission prompt in an interactive session - the terminal bell rings (check your emulator's bell settings if silent).",
+    "Negative: regular output should not ring.",
+    "Note: in non-interactive (-p) runs nothing rings - Claude Code ignores terminalSequence there."
   ],
   "sources": [
     {

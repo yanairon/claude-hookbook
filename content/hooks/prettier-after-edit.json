@@ -1,0 +1,59 @@
+{
+  "slug": "prettier-after-edit",
+  "name": "Prettier after edit",
+  "oneLine": "Runs Prettier on any JS/TS/JSON/CSS/Markdown file right after Claude edits it.",
+  "description": "Fires on PostToolUse for Edit and Write. A small script extracts the edited file path from the hook JSON, gates on web-file extensions, and runs prettier --write when Prettier is available. Files Claude did not touch are never formatted.",
+  "category": [
+    "formatting"
+  ],
+  "tags": [],
+  "event": "PostToolUse",
+  "matcher": "Edit|Write",
+  "handlerType": "command",
+  "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/prettier-after-edit.sh",
+  "scriptPath": ".claude/hooks/prettier-after-edit.sh",
+  "scriptBody": "#!/bin/bash\n# prettier-after-edit: run after Claude edits a file. Reads hook JSON from stdin.\nset -u\nfile=$(jq -r '.tool_input.file_path // empty')\n[ -z \"$file\" ] && exit 0\n[ -f \"$file\" ] || exit 0\ncase \"$file\" in\n*.js|*.jsx|*.ts|*.tsx|*.json|*.css|*.md) ;;\n  *) exit 0 ;;\nesac\nif ! command -v prettier >/dev/null 2>&1; then\n  exit 0  # formatter not installed; stay silent\nfi\nprettier --write \"$file\" >/dev/null 2>&1\nexit 0\n",
+  "timeout": 30,
+  "scope": "project",
+  "platforms": [
+    "macos",
+    "linux"
+  ],
+  "requires": [
+    "jq",
+    "prettier"
+  ],
+  "risk": "low",
+  "failureMode": "observe",
+  "installSteps": [
+    "Save the script to .claude/hooks/prettier-after-edit.sh and run: chmod +x .claude/hooks/prettier-after-edit.sh",
+    "Install the formatter (prettier) and make sure it is on your PATH, plus jq.",
+    "Add the config fragment to .claude/settings.json (or use the generator)."
+  ],
+  "testSteps": [
+    "Positive: ask Claude to edit a matching file (*.js|*.jsx|*.ts|*.tsx|*.json|*.css|*.md), then check the file was reformatted.",
+    "Negative: ask Claude to edit a non-matching file (e.g. README.txt) - the formatter should not run (check with /doctor or debug logs)."
+  ],
+  "sources": [
+    {
+      "title": "Claude Code hooks reference",
+      "url": "https://code.claude.com/docs/en/hooks",
+      "type": "official-docs",
+      "checkedAt": "2026-09-10"
+    },
+    {
+      "title": "Claude Code hooks guide",
+      "url": "https://code.claude.com/docs/en/hooks-guide",
+      "type": "official-docs",
+      "checkedAt": "2026-09-10"
+    }
+  ],
+  "verifiedAgainst": "Claude Code hooks reference, event/matcher schema checked 2026-09-10",
+  "testStatus": "needs-manual-check",
+  "seoTitle": "Prettier after edit - Claude Code hook",
+  "seoDescription": "Runs Prettier on any JS/TS/JSON/CSS/Markdown file right after Claude edits it.",
+  "relatedHooks": [
+    "eslint-after-edit",
+    "typecheck-after-ts"
+  ]
+}

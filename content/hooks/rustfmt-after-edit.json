@@ -1,0 +1,56 @@
+{
+  "slug": "rustfmt-after-edit",
+  "name": "rustfmt after Rust edit",
+  "oneLine": "Runs rustfmt on Rust files after Claude edits them.",
+  "description": "Gates on .rs files and runs rustfmt on the edited file only, so large workspaces stay fast.",
+  "category": [
+    "formatting"
+  ],
+  "tags": [],
+  "event": "PostToolUse",
+  "matcher": "Edit|Write",
+  "handlerType": "command",
+  "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/rustfmt-after-edit.sh",
+  "scriptPath": ".claude/hooks/rustfmt-after-edit.sh",
+  "scriptBody": "#!/bin/bash\n# rustfmt-after-edit: run after Claude edits a file. Reads hook JSON from stdin.\nset -u\nfile=$(jq -r '.tool_input.file_path // empty')\n[ -z \"$file\" ] && exit 0\n[ -f \"$file\" ] || exit 0\ncase \"$file\" in\n*.rs) ;;\n  *) exit 0 ;;\nesac\nif ! command -v rustfmt >/dev/null 2>&1; then\n  exit 0  # formatter not installed; stay silent\nfi\nrustfmt \"$file\" >/dev/null 2>&1\nexit 0\n",
+  "timeout": 30,
+  "scope": "project",
+  "platforms": [
+    "macos",
+    "linux"
+  ],
+  "requires": [
+    "jq",
+    "rustfmt"
+  ],
+  "risk": "low",
+  "failureMode": "observe",
+  "installSteps": [
+    "Save the script to .claude/hooks/rustfmt-after-edit.sh and run: chmod +x .claude/hooks/rustfmt-after-edit.sh",
+    "Install the formatter (rustfmt) and make sure it is on your PATH, plus jq.",
+    "Add the config fragment to .claude/settings.json (or use the generator)."
+  ],
+  "testSteps": [
+    "Positive: ask Claude to edit a matching file (*.rs), then check the file was reformatted.",
+    "Negative: ask Claude to edit a non-matching file (e.g. README.txt) - the formatter should not run (check with /doctor or debug logs)."
+  ],
+  "sources": [
+    {
+      "title": "Claude Code hooks reference",
+      "url": "https://code.claude.com/docs/en/hooks",
+      "type": "official-docs",
+      "checkedAt": "2026-09-10"
+    },
+    {
+      "title": "Claude Code hooks guide",
+      "url": "https://code.claude.com/docs/en/hooks-guide",
+      "type": "official-docs",
+      "checkedAt": "2026-09-10"
+    }
+  ],
+  "verifiedAgainst": "Claude Code hooks reference, event/matcher schema checked 2026-09-10",
+  "testStatus": "needs-manual-check",
+  "seoTitle": "rustfmt after Rust edit - Claude Code hook",
+  "seoDescription": "Runs rustfmt on Rust files after Claude edits them.",
+  "relatedHooks": []
+}

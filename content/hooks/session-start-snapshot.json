@@ -1,0 +1,52 @@
+{
+  "slug": "session-start-snapshot",
+  "name": "Session-start repo snapshot",
+  "oneLine": "Hands Claude a bounded snapshot - branch, dirty state, recent commits - at every session start and resume.",
+  "description": "Fires on SessionStart for startup and resume. Prints the current branch, a one-line dirty-file count, and the last 5 commits to stdout, which SessionStart adds to context. Bounded on purpose: a wall of git log at every start is context pollution, not context.",
+  "category": [
+    "context"
+  ],
+  "tags": [
+    "git"
+  ],
+  "event": "SessionStart",
+  "matcher": "startup|resume",
+  "handlerType": "command",
+  "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/session-start-snapshot.sh",
+  "scriptPath": ".claude/hooks/session-start-snapshot.sh",
+  "scriptBody": "#!/bin/bash\n# session-start-snapshot: bounded git snapshot into context.\nset -u\ncd \"${CLAUDE_PROJECT_DIR:-$PWD}\" || exit 0\ngit rev-parse --is-inside-work-tree >/dev/null 2>&1 || exit 0\nbranch=$(git branch --show-current 2>/dev/null || echo detached)\ndirty=$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')\necho \"Repo snapshot: branch=$branch, uncommitted files=$dirty\"\necho \"Recent commits:\"\ngit log --oneline -5 2>/dev/null\nexit 0\n",
+  "timeout": 10,
+  "scope": "project",
+  "platforms": [
+    "macos",
+    "linux"
+  ],
+  "requires": [
+    "git"
+  ],
+  "risk": "low",
+  "failureMode": "observe",
+  "installSteps": [
+    "Save the script to .claude/hooks/session-start-snapshot.sh and chmod +x it.",
+    "Add the config fragment to .claude/settings.json."
+  ],
+  "testSteps": [
+    "Positive: start a session in a repo with uncommitted changes - Claude knows the branch and dirty count without running git itself.",
+    "Negative: outside a git repo, nothing is printed."
+  ],
+  "sources": [
+    {
+      "title": "Claude Code hooks reference",
+      "url": "https://code.claude.com/docs/en/hooks",
+      "type": "official-docs",
+      "checkedAt": "2026-09-10"
+    }
+  ],
+  "verifiedAgainst": "Claude Code hooks reference, event/matcher schema checked 2026-09-10",
+  "testStatus": "needs-manual-check",
+  "seoTitle": "Session-start repo snapshot - Claude Code hook",
+  "seoDescription": "A SessionStart hook that injects branch, dirty state, and recent commits into context.",
+  "relatedHooks": [
+    "reinject-context-compact"
+  ]
+}

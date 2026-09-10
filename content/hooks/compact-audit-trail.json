@@ -1,0 +1,52 @@
+{
+  "slug": "compact-audit-trail",
+  "name": "Compact audit trail on stop",
+  "oneLine": "Appends a one-line JSON record to a local audit log every time Claude finishes a turn.",
+  "description": "Fires on Stop and appends {timestamp, session_id, cwd} to .claude/stop-audit.jsonl. Enough to reconstruct when sessions happened and where, without parsing the transcript (which lags during the Stop event - do not read it for the final answer). Redact-minded: no prompts, no tool inputs, nothing sensitive.",
+  "category": [
+    "workflow"
+  ],
+  "tags": [
+    "audit"
+  ],
+  "event": "Stop",
+  "handlerType": "command",
+  "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/compact-audit-trail.sh",
+  "scriptPath": ".claude/hooks/compact-audit-trail.sh",
+  "scriptBody": "#!/bin/bash\n# compact-audit-trail: one JSON line per completed turn.\nset -u\ninput=$(cat)\nsession=$(printf '%s' \"$input\" | jq -r '.session_id // \"unknown\"')\ncwd=$(printf '%s' \"$input\" | jq -r '.cwd // \"unknown\"')\nlog=\"${CLAUDE_PROJECT_DIR:-.}/.claude/stop-audit.jsonl\"\nmkdir -p \"$(dirname \"$log\")\"\njq -n --arg ts \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\" --arg s \"$session\" --arg c \"$cwd\"   '{ts: $ts, session: $s, cwd: $c}' >> \"$log\"\nexit 0\n",
+  "timeout": 10,
+  "scope": "project",
+  "platforms": [
+    "macos",
+    "linux"
+  ],
+  "requires": [
+    "jq"
+  ],
+  "risk": "low",
+  "failureMode": "observe",
+  "installSteps": [
+    "Save the script to .claude/hooks/compact-audit-trail.sh and chmod +x it.",
+    "Add .claude/stop-audit.jsonl to .gitignore if you do not want it committed.",
+    "Add the config fragment to .claude/settings.json."
+  ],
+  "testSteps": [
+    "Positive: run one turn, then check .claude/stop-audit.jsonl has a new JSON line.",
+    "Negative: the file should contain no prompts or tool inputs - verify the line shape."
+  ],
+  "sources": [
+    {
+      "title": "Claude Code hooks reference",
+      "url": "https://code.claude.com/docs/en/hooks",
+      "type": "official-docs",
+      "checkedAt": "2026-09-10"
+    }
+  ],
+  "verifiedAgainst": "Claude Code hooks reference, event/matcher schema checked 2026-09-10",
+  "testStatus": "needs-manual-check",
+  "seoTitle": "Compact audit trail on stop - Claude Code hook",
+  "seoDescription": "A Stop hook that appends a minimal JSON audit record per turn.",
+  "relatedHooks": [
+    "log-tool-failures"
+  ]
+}

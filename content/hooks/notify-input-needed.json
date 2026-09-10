@@ -1,0 +1,54 @@
+{
+  "slug": "notify-input-needed",
+  "name": "Notify when Claude needs input",
+  "oneLine": "Desktop notification when Claude asks for permission or goes idle waiting for you.",
+  "description": "Fires on Notification with the permission_prompt, idle_prompt, and agent_needs_input matchers, then posts a native desktop notification (osascript on macOS, notify-send on Linux). Runs detached so notification daemons never stall the session. Note: agent_needs_input is one of the newer matcher values - older Claude Code versions simply will not fire it.",
+  "category": [
+    "notifications"
+  ],
+  "tags": [
+    "desktop"
+  ],
+  "event": "Notification",
+  "matcher": "permission_prompt|idle_prompt|agent_needs_input",
+  "handlerType": "command",
+  "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/notify-input-needed.sh",
+  "scriptPath": ".claude/hooks/notify-input-needed.sh",
+  "scriptBody": "#!/bin/bash\n# notify-input-needed: desktop notification on permission/idle prompts.\nset -u\nmsg=\"Claude needs your input\"\nif command -v osascript >/dev/null 2>&1; then\n  osascript -e \"display notification \\\"$msg\\\" with title \\\"Claude Code\\\"\" >/dev/null 2>&1 &\nelif command -v notify-send >/dev/null 2>&1; then\n  notify-send \"Claude Code\" \"$msg\" >/dev/null 2>&1 &\nfi\nexit 0\n",
+  "timeout": 10,
+  "scope": "user",
+  "platforms": [
+    "macos",
+    "linux"
+  ],
+  "requires": [
+    "jq"
+  ],
+  "risk": "low",
+  "failureMode": "observe",
+  "installSteps": [
+    "Save the script to .claude/hooks/notify-input-needed.sh and chmod +x it.",
+    "Add the config fragment to ~/.claude/settings.json (user scope - useful in every project)."
+  ],
+  "testSteps": [
+    "Positive: trigger a permission prompt (e.g. a command that needs approval) - a desktop notification should appear.",
+    "Negative: normal tool calls that need no approval should not notify."
+  ],
+  "sources": [
+    {
+      "title": "Claude Code hooks reference",
+      "url": "https://code.claude.com/docs/en/hooks",
+      "type": "official-docs",
+      "checkedAt": "2026-09-10"
+    }
+  ],
+  "verifiedAgainst": "Claude Code hooks reference, event/matcher schema checked 2026-09-10",
+  "testStatus": "needs-manual-check",
+  "seoTitle": "Notify when Claude needs input - Claude Code hook",
+  "seoDescription": "Desktop notification on permission prompts and idle states in Claude Code.",
+  "relatedHooks": [
+    "bell-permission-prompt",
+    "notify-agent-complete"
+  ],
+  "async": true
+}

@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Unit tests for the settings.json merge engine
+      - run: npm test
+
+      # Static build; also validates every recipe JSON against the Zod
+      # schema at build time (the loader throws on invalid content)
+      - run: npm run build

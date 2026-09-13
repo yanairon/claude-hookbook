@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   title: { default: "Claude Hookbook", template: "%s - Claude Hookbook" },
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             Anthropic.
           </div>
         </footer>
+        <Analytics />
       </body>
     </html>
   );

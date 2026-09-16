@@ -41,3 +41,7 @@ Formspree, or your own API). No backend ships in v1.
 
 Static-friendly (all routes `force-static`, `generateStaticParams` for dynamic
 pages). Deploys on Vercel with zero config.
+
+## Related projects
+
+- [taskpods](https://github.com/yanairon/taskpods) - Run parallel AI coding agents in disposable Git worktrees. Pairs well with hookbook: export one hooks configuration into every pod.
